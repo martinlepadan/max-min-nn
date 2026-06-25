@@ -21,18 +21,21 @@ def run(net_cls, dataset, lam, beta, seed=0,
     history = net.fit(X_fit, Y_fit, X_val, Y_val, lam=lam, beta=beta,
                       epochs=epochs, verbose=verbose)
     seconds = time.perf_counter() - t0
+    feasibility = net.feasibility_rate() if hasattr(net, "feasibility_rate") else None
+    feasibility_history = getattr(net, "feasibility_history", None)
 
     return {
         "version": net.version,
         "lam": lam, "beta": beta,
         "adaptative": adaptative,
         "gradient": use_gradient_step,
-        "train_r2": r2_score(Y_te, net.predict(X_te)),
-        "test_r2": r2_score(Y_tr, net.predict(X_tr)),
+        "train_r2": r2_score(Y_tr, net.predict(X_tr)),
+        "test_r2": r2_score(Y_te, net.predict(X_te)),
         "seconds": seconds,
         "epochs": len(history),
         "history": history,
-        "feasibility": getattr(net, "feasibility_history", None),
+        "feasibility": feasibility,
+        "feasibility_history": feasibility_history,
     }
 
 
@@ -51,12 +54,26 @@ def run_seeds(net_cls, lam, beta, seeds=range(5), epochs=300,
     r2s_train = np.array([r["train_r2"] for r in results])
     secs = np.array([r["seconds"] for r in results])
     eps = np.array([r["epochs"] for r in results])
+
+    feas = [r["feasibility"] for r in results]
+    feasibility = None
+    if all(f is not None for f in feas):
+        globals_ = np.array([f["global"] for f in feas])
+        layers = sorted(feas[0]["per_layer"])
+        feasibility = {
+            "global_mean": globals_.mean(), "global_std": globals_.std(),
+            "per_layer_mean": {lay: float(np.mean([f["per_layer"][lay] for f in feas])) for lay in layers},
+        }
+
     return {
         "version": results[0]["version"],
         "lam": lam, "beta": beta,
+        "adaptative": adaptative,
+        "gradient": use_gradient_step,
         "r2_mean_train": r2s_train.mean(), "r2_std_train": r2s_train.std(),
         "r2_mean_test": r2s_test.mean(), "r2_std_test": r2s_test.std(),
         "sec_mean": secs.mean(), "sec_std": secs.std(),
         "ep_mean": eps.mean(), "ep_std": eps.std(),
+        "feasibility": feasibility,
         "results": results,
     }

@@ -1,6 +1,7 @@
 import numpy as np
 
-from versions.v1.network import V1Net
+from versions.network_v1 import V1Net
+from versions.network_v2 import V2Net
 from common.network import default_layers
 
 
@@ -18,7 +19,7 @@ def train_val_split(X, Y, frac_val=0.2):
     return X[n_val:], Y[n_val:], X[:n_val], Y[:n_val]
 
 
-def make_maxmin_dataset(n_samples=1000, n_inputs=12, noise=0.01, seed=0):
+def make_maxmin_dataset(version="V1", n_samples=1000, n_inputs=12, noise=0.01, seed=0):
     """
     Dataset 1: targets produced by a pure max-min network (monotone function) with added noise.
     
@@ -31,7 +32,14 @@ def make_maxmin_dataset(n_samples=1000, n_inputs=12, noise=0.01, seed=0):
     X = rng.random((n_samples, n_inputs))
 
     sizes = default_layers(n_inputs, generate=True)
-    net = V1Net(sizes, seed=seed + 100)
+
+    if version == "V1":
+        net = V1Net(sizes, seed=seed + 100)
+
+    if version == "V2":
+        net = V2Net(sizes, seed=seed + 100)
+        net.b = [rng.integers(0, 2, size=bk.shape[0]).astype(float) for bk in net.b] 
+
     Y = net.predict(X)
 
     Y = Y + rng.normal(0.0, noise, size=Y.shape)
@@ -39,7 +47,5 @@ def make_maxmin_dataset(n_samples=1000, n_inputs=12, noise=0.01, seed=0):
 
     return _split(X, Y)
 
-
 # TODO:
 # def load_dataset -> Dataset avec données réelles 
-# def make_v2_dataset -> Dataset avec données non-monotones
