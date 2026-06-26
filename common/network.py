@@ -10,8 +10,8 @@ def default_layers(n: int, generate: bool = False) -> list:
     Default architectures   
     """
     if generate:
-        return [n, 2 * n, 4 * n, 2 * n, n, 1]
-    return [n, 2 * n, 4 * n, 6 * n, 4 * n, 2 * n, n, 1]
+        return [n, 2 * n, n, 1]
+    return [n, 2 * n, 4 * n, 2 * n, n, 1]
 
 
 class BaseMaxMinNet:
@@ -58,7 +58,7 @@ class BaseMaxMinNet:
         """
         raise NotImplementedError
 
-    def backward_layer(self, k, z_prev, t, lam, beta):
+    def backward_layer(self, k, z_prev, t, lam_a, beta, lam_b=None):
         """
         Backward pass for layer k.
 
@@ -70,10 +70,12 @@ class BaseMaxMinNet:
             Input to the layer (activations from the previous layer, z_{k-1}).
         t : np.ndarray
             Target for the layer.
-        lam : float
-            Regularization parameter.
+        lam_a : float
+            Regularization parameter for the weights
         beta : float
             Step size.
+        lam_b : float
+            Regularization parameter for the switchs
 
         Returns
         -------
@@ -158,7 +160,7 @@ class BaseMaxMinNet:
     def _restore(self, snap):
         self.A, self.b = copy.deepcopy(snap[0]), copy.deepcopy(snap[1])
 
-    def fit(self, X, Y, X_eval, Y_eval, lam, beta,
+    def fit(self, X, Y, X_eval, Y_eval, lam, lam_b, beta,
             epochs=300, patience=20, delta=1e-3, verbose=False):
         """
         Train the network on the dataset (X, Y) -> forward pass then back propagation.

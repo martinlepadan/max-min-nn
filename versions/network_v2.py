@@ -70,7 +70,7 @@ class V2Net(BaseMaxMinNet):
         tau = equ(t, b)
         return mip(np.asarray(A, dtype=float).T, tau)
 
-    def _step1_weights(self, k, x, t, lam):
+    def _step1_weights(self, k, x, t, lam_a, lam_b):
         """
         Step 1: updating (a) and (b)
 
@@ -107,8 +107,8 @@ class V2Net(BaseMaxMinNet):
         a_new[is_t3] = 0.0
         b_target = np.where(is_t3, 1.0 - t, b_target)
 
-        self.A[k] = (1.0 - lam) * A + lam * a_new
-        self.b[k] = (1.0 - lam) * b + lam * b_target
+        self.A[k] = (1.0 - lam_a) * A + lam_a * a_new
+        self.b[k] = (1.0 - lam_b) * b + lam_b * b_target
 
     # Calculate the gradient (not indicated in the paper, so we make this step optional)
     def _step2_gradient(self, k, x, t, beta):
@@ -140,11 +140,11 @@ class V2Net(BaseMaxMinNet):
         
         return self.approx_target(A, b, t), "approx" 
 
-    def backward_layer(self, k, z_prev, t, lam, beta):
+    def backward_layer(self, k, z_prev, t, lam_a, lam_b, beta):
         x = np.asarray(z_prev, dtype=float)
         t = np.asarray(t, dtype=float)
 
-        self._step1_weights(k, x, t, lam)
+        self._step1_weights(k, x, t, lam_a, lam_b)
         if self.use_gradient_step:
             self._step2_gradient(k, x, t, beta)
         t_prev, mode = self._layer_target(k, t)
