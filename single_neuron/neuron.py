@@ -57,9 +57,10 @@ class Neuron:
             yhat = equ(s, self.b)
             err = y - yhat
             sigma = 1.0 if (s + self.b) >= 1.0 else -1.0
-            j = np.minimum(self.a, x).argmax()
+            mins = np.minimum(self.a, x)
+            winners = mins == mins.max()
 
-            self.a[j] = np.clip(self.a[j] + beta * sigma * err, 0.0, 1.0)
+            self.a[winners] = np.clip(self.a[winners] + beta * sigma * err, 0.0, 1.0)
 
         # Step 3: only for multiple layers
 
