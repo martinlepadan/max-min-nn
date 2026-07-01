@@ -13,10 +13,10 @@ TEST_C = "C0"
 def _learning_curve(ax, r2_train, r2_test):
     ax.plot(r2_train, color=TRAIN_C, lw=1.3, label="train")
     ax.plot(r2_test, color=TEST_C, lw=1.3, label="test")
-    ax.set_xlabel("époque")
+    ax.set_xlabel("epoch")
     ax.set_ylabel("R²")
     lo = min([*r2_train, *r2_test], default=0.0)
-    # ax.set_ylim(bottom=max(-1.0, lo - 0.05), top=1.02)
+    ax.set_ylim(bottom=max(-1.0, lo - 0.05), top=1.02)
     ax.set_ylim(bottom=lo - 0.05, top=1.02)
     ax.legend(frameon=False, fontsize=9)
 

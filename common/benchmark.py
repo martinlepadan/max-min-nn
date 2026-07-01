@@ -8,9 +8,11 @@ from common.data import make_maxmin_dataset, train_val_split
 
 def run(net_cls, dataset, lam, beta, lam_b=0.05, seed=0, hidden=None,
         epochs=300, use_gradient_step=True, adaptative=False, verbose=False,
-        plot=False, fig_dir="figures/network"):
+        plot=False, fig_dir="figures/network", attrs=None):
     """
-    Train one network and return the metrics
+    Train one network and return the metrics.
+
+    `attrs` : dict of network attributes to set after construction
     """
     X_tr, Y_tr, X_te, Y_te = dataset
     X_fit, Y_fit, X_val, Y_val = train_val_split(X_tr, Y_tr)
@@ -18,6 +20,8 @@ def run(net_cls, dataset, lam, beta, lam_b=0.05, seed=0, hidden=None,
 
     net = net_cls(layer_sizes(n, hidden), seed=seed,
                   use_gradient_step=use_gradient_step, adaptative=adaptative)
+    for key, val in (attrs or {}).items():
+        setattr(net, key, val)
 
     t0 = time.perf_counter()
     history = net.fit(X_fit, Y_fit, X_val, Y_val, lam=lam, lam_b=lam_b, beta=beta,
@@ -39,6 +43,7 @@ def run(net_cls, dataset, lam, beta, lam_b=0.05, seed=0, hidden=None,
         "gradient": use_gradient_step,
         "train_r2": r2_score(Y_tr, net.predict(X_tr)),
         "test_r2": r2_score(Y_te, net.predict(X_te)),
+        "test_acc": float(np.mean((net.predict(X_te) >= 0.5) == (Y_te >= 0.5))),
         "seconds": seconds,
         "epochs": len(history),
         "history": history,
@@ -49,7 +54,7 @@ def run(net_cls, dataset, lam, beta, lam_b=0.05, seed=0, hidden=None,
 
 def run_seeds(net_cls, lam, beta, lam_b=0.05, seeds=range(5), epochs=300,
               use_gradient_step=True, adaptative=False, dataset_fn=make_maxmin_dataset,
-              hidden=None, plot=False, fig_dir="figures/network"):
+              hidden=None, plot=False, fig_dir="figures/network", attrs=None):
     """
     Run multiple networks with differents seeds to get aggregated results
     """
@@ -58,10 +63,11 @@ def run_seeds(net_cls, lam, beta, lam_b=0.05, seeds=range(5), epochs=300,
         dataset = dataset_fn(seed=seed)
         results.append(run(net_cls, dataset, lam, beta, lam_b=lam_b, seed=seed, hidden=hidden,
                            epochs=epochs, use_gradient_step=use_gradient_step, adaptative=adaptative,
-                           plot=(plot and i == 0), fig_dir=fig_dir))
+                           plot=(plot and i == 0), fig_dir=fig_dir, attrs=attrs))
 
     r2s_test = np.array([r["test_r2"] for r in results])
     r2s_train = np.array([r["train_r2"] for r in results])
+    accs_test = np.array([r["test_acc"] for r in results])
     secs = np.array([r["seconds"] for r in results])
     eps = np.array([r["epochs"] for r in results])
 
@@ -82,6 +88,7 @@ def run_seeds(net_cls, lam, beta, lam_b=0.05, seeds=range(5), epochs=300,
         "gradient": use_gradient_step,
         "r2_mean_train": r2s_train.mean(), "r2_std_train": r2s_train.std(),
         "r2_mean_test": r2s_test.mean(), "r2_std_test": r2s_test.std(),
+        "acc_mean_test": accs_test.mean(), "acc_std_test": accs_test.std(),
         "sec_mean": secs.mean(), "sec_std": secs.std(),
         "ep_mean": eps.mean(), "ep_std": eps.std(),
         "feasibility": feasibility,

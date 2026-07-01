@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from versions.network_v1 import V1Net
 from versions.network_v2 import V2Net
@@ -31,7 +32,6 @@ def make_maxmin_dataset(version="V1", n_samples=1000, n_inputs=12, noise=0.01, s
     rng = np.random.default_rng(seed)
     X = rng.random((n_samples, n_inputs))
 
-    # architecture fixe du générateur (indépendante de celle de l'élève)
     sizes = layer_sizes(n_inputs, hidden=[2 * n_inputs, n_inputs])
 
     if version == "V1":
@@ -49,20 +49,16 @@ def make_maxmin_dataset(version="V1", n_samples=1000, n_inputs=12, noise=0.01, s
     return _split(X, Y)
 
 
-def load_dataset(name="MONKS"):
-    
-    if name=="MONKS":
-        # fetch dataset 
-        monk_s_problems = fetch_ucirepo(id=70) 
-        
-        # data (as pandas dataframes) 
-        X = monk_s_problems.data.features 
-        y = monk_s_problems.data.targets 
-    
-    X = X.to_numpy()
-    y = y.to_numpy()
+def load_dataset(name="MONKS", seed=0):
+    """
+    Load dataset from UCI repo
+    """
+    if name == "MONKS":
+        monk = fetch_ucirepo(id=70)
+        X = pd.get_dummies(monk.data.features.astype(str)).to_numpy().astype(float)
+        y = monk.data.targets.to_numpy().astype(float).ravel()
+    else:
+        raise ValueError(f"Unknown dataset: {name}")
 
-    X = X.astype(float)
-    y = y.astype(float)
-
-    return _split(X, y)
+    perm = np.random.default_rng(seed).permutation(len(X))
+    return _split(X[perm], y[perm])
