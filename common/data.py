@@ -2,8 +2,8 @@ import numpy as np
 
 from versions.network_v1 import V1Net
 from versions.network_v2 import V2Net
-from common.network import default_layers
-
+from common.network import layer_sizes
+from ucimlrepo import fetch_ucirepo 
 
 def _split(X, Y, frac_train=0.5):
     """Split the dataset in half for training and testing."""
@@ -31,7 +31,8 @@ def make_maxmin_dataset(version="V1", n_samples=1000, n_inputs=12, noise=0.01, s
     rng = np.random.default_rng(seed)
     X = rng.random((n_samples, n_inputs))
 
-    sizes = default_layers(n_inputs, generate=True)
+    # architecture fixe du générateur (indépendante de celle de l'élève)
+    sizes = layer_sizes(n_inputs, hidden=[2 * n_inputs, n_inputs])
 
     if version == "V1":
         net = V1Net(sizes, seed=seed + 100)
@@ -47,5 +48,21 @@ def make_maxmin_dataset(version="V1", n_samples=1000, n_inputs=12, noise=0.01, s
 
     return _split(X, Y)
 
-# TODO:
-# def load_dataset -> Dataset avec données réelles 
+
+def load_dataset(name="MONKS"):
+    
+    if name=="MONKS":
+        # fetch dataset 
+        monk_s_problems = fetch_ucirepo(id=70) 
+        
+        # data (as pandas dataframes) 
+        X = monk_s_problems.data.features 
+        y = monk_s_problems.data.targets 
+    
+    X = X.to_numpy()
+    y = y.to_numpy()
+
+    X = X.astype(float)
+    y = y.astype(float)
+
+    return _split(X, y)

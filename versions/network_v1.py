@@ -16,7 +16,7 @@ class V1Net(BaseMaxMinNet):
     def neuron(self, k, z):
         return mmp(self.A[k], z)
 
-    def backward_layer(self, k, z_prev, t, lam, beta):
+    def backward_layer(self, k, z_prev, t, lam, lam_b, beta):
         z_prev = np.asarray(z_prev, dtype=float)
         t = np.asarray(t, dtype=float)
         A = self.A[k]

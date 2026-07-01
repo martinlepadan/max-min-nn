@@ -14,11 +14,21 @@ def check_var(a: float) -> bool:
 def impl(a: Array, b: Array) -> np.ndarray:
     """
     Gödel implication: 1 if a <= b else b.
+    Greatest solution of a max-min system
     """
     a = np.asarray(a, dtype=float)
     b = np.asarray(b, dtype=float)
     return np.where(a <= b, 1.0, b)
 
+
+def eps(a: Array, b: Array) -> np.ndarray:
+    """
+    Epsilon product: b if a < b else 0.
+    Lowest solution of a min-max system
+    """
+    a = np.asarray(a, dtype=float)
+    b = np.asarray(b, dtype=float)
+    return np.where(a < b, b, 0.0)
 
 def equ(u: Array, v: Array) -> np.ndarray:
     """
@@ -45,6 +55,11 @@ def mmp(A: Array, x: Array) -> np.ndarray:
         if A.shape[1] != x.shape[0]:
             raise ValueError("The number of columns in A must match the size of x.")
         return np.max(np.minimum(A, x), axis=1)
+    
+    elif A.ndim == 3:
+        if A.shape[2] != x.shape[2]:
+            raise ValueError("The number of columns in A must match the size of x.")
+        return np.max(np.minimum(A, x), axis=2)
 
     else:
         raise ValueError("A must be either a 1D or 2D array.")
@@ -67,6 +82,10 @@ def mip(A: Array, x: Array) -> np.ndarray:
             raise ValueError("The number of columns in A must match the size of x.")
         return np.min(impl(A, x), axis=1)
 
+    elif A.ndim == 3:
+        if A.shape[2] != x.shape[2]:
+            raise ValueError("The number of columns in A must match the size of x.")
+        return np.min(impl(A, x), axis=2)
     else:
         raise ValueError("A must be either a 1D or 2D array.")
 

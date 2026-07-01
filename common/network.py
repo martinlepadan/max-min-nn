@@ -5,13 +5,13 @@ from fuzzy import impl
 from common.metrics import r2_score
 
 
-def default_layers(n: int, generate: bool = False) -> list:
+def layer_sizes(n_inputs: int, hidden: list | None = None) -> list:
     """
-    Default architectures   
+    Return the list of layers for a network
     """
-    if generate:
-        return [n, 2 * n, n, 1]
-    return [n, 2 * n, 4 * n, 2 * n, n, 1]
+    if hidden is None:
+        hidden = [2 * n_inputs, n_inputs]
+    return [n_inputs, *hidden, 1]
 
 
 class BaseMaxMinNet:
@@ -58,7 +58,7 @@ class BaseMaxMinNet:
         """
         raise NotImplementedError
 
-    def backward_layer(self, k, z_prev, t, lam_a, beta, lam_b=None):
+    def backward_layer(self, k, z_prev, t, lam_a, lam_b, beta):
         """
         Backward pass for layer k.
 
@@ -160,22 +160,27 @@ class BaseMaxMinNet:
     def _restore(self, snap):
         self.A, self.b = copy.deepcopy(snap[0]), copy.deepcopy(snap[1])
 
-    def fit(self, X, Y, X_eval, Y_eval, lam, lam_b, beta,
-            epochs=300, patience=20, delta=1e-3, verbose=False):
+    def fit(self, X, Y, X_eval, Y_eval, lam=1e-7, lam_b=0.05, beta=1e-2,
+            epochs=300, patience=20, delta=1e-3, verbose=False, X_test=None, Y_test=None):
         """
         Train the network on the dataset (X, Y) -> forward pass then back propagation.
         Early stopping on R2 is implemented to stop the training if not useful anymore.
         Bests weights are restored at the end.
 
+        `X_test`/`Y_test` : jeu de suivi optionnel (monitoring seul, ne sert pas à
+        l'early-stopping) pour tracer la courbe R² train/test. À défaut, on suit la
+        validation. Historiques dans `self.r2_train_hist` / `self.r2_test_hist`.
+
         Returns
         -------
         list of float
-            R2 on test set at each epoch
+            R2 on the validation set at each epoch
         """
         X = np.asarray(X, dtype=float)
         Y = np.asarray(Y, dtype=float)
 
         history = []
+        self.r2_train_hist, self.r2_test_hist = [], []
         best_r2 = -np.inf
         best_snapshot = self._snapshot()
         best_patience_r2 = -np.inf
@@ -187,10 +192,13 @@ class BaseMaxMinNet:
                 acts = self.forward(x)
                 t = np.array([y], dtype=float)
                 for k in reversed(range(self.n_layers)):
-                    t = self.backward_layer(k, acts[k], t, lam, beta)
+                    t = self.backward_layer(k, acts[k], t, lam, lam_b, beta)
 
             r2 = r2_score(Y_eval, self.predict(X_eval))
             history.append(r2)
+            self.r2_train_hist.append(r2_score(Y, self.predict(X)))
+            self.r2_test_hist.append(
+                r2_score(Y_test, self.predict(X_test)) if X_test is not None else r2)
             self._on_epoch_end(epoch)
             if verbose:
                 print(f"epoch {epoch:3d}  R2={r2:.4f}")

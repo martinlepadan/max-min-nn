@@ -7,8 +7,7 @@ from common.metrics import r2_score
 from common.data import _split
 
 SEEDS = (1, 2, 3, 4, 5)
-NOISE = 0.0  # noise-free only: the note's exact greatest solution is valid here
-
+NOISE = 0.0 
 
 def a_star_of(n):
     """Fixed weights of the generator"""
@@ -90,10 +89,12 @@ def run_greatest(title, b_star, n=5, method="min"):
 
 
 def plot_predictions(neuron_cls, path="predictions.png", n=5, seed=1):
+    import os
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
     for ax, b_star in zip(axes, (1.0, 0.0)):
         a_star = a_star_of(n)
@@ -131,9 +132,9 @@ def main():
         if b_star == 1.0:
             print("\nData generated with b=0 ")
 
-    plot_predictions(Neuron, path="predictions.png")
-    plot_predictions(MinMaxNotesNeuron, path="predictions_note.png")
-    plot_predictions(MinMaxGreatestNeuron, path="predictions_greatest.png")
+    plot_predictions(Neuron, path="figures/neuron/predictions.png")
+    plot_predictions(MinMaxNotesNeuron, path="figures/neuron/predictions_note.png")
+    plot_predictions(MinMaxGreatestNeuron, path="figures/neuron/predictions_greatest.png")
 
 
 if __name__ == "__main__":

@@ -1,8 +1,8 @@
-from common.benchmark import run_seeds, run  # noqa: F401
-from common.data import make_maxmin_dataset
+from common.benchmark import run_seeds
 from versions.network_v1 import V1Net
 from versions.network_v2 import V2Net
 from versions.network_v3 import V3Net
+from versions.network_direct import DirectSolveNet
 
 def report(agg):
     print(f"[{agg['version']}] | adaptative: {agg['adaptative']} | gradient: {agg['gradient']} | lambda={agg['lam']} | beta={agg['beta']}")
@@ -34,12 +34,15 @@ def unique_report(iter):
 
 def main():
 
-    for net_cls in (V1Net, V2Net, V3Net):
-        # report(run_seeds(net_cls, lam=1e-7, beta=1e-2, seeds=range(5),
-        #                 epochs=300, use_gradient_step=True, adaptative=True))
-        unique_report(run(net_cls, make_maxmin_dataset(), lam=1e-7, beta=1e-2, adaptative=True))
-
-    # unique_report(run(V1Net, make_maxmin_dataset(), lam=1e-7, beta=1e-2, adaptative=True))
+    configs = [
+        (V1Net, dict(lam=1e-7, beta=1e-2, lam_b=0.05)),
+        (V2Net, dict(lam=1e-7, beta=1e-2, lam_b=0.05)),
+        (V3Net, dict(lam=1e-7, beta=1e-2, lam_b=0.05)),
+        (DirectSolveNet, dict(lam=1e-7, beta=1e-2, lam_b=0.30, hidden=[5, 5])),
+    ]
+    for net_cls, hp in configs:
+        report(run_seeds(net_cls, seeds=range(5), epochs=300, plot=True, **hp))
+        print()
 
 
 if __name__ == "__main__":
